@@ -1,36 +1,89 @@
+#include <Servo.h>
 #include <Stepper.h>
 
-const int STEPS_PER_REVOLUTION = 200; // Change according to your stepper motor
-const int stepperPin1 = 4;            // Digital pin for stepper motor control
-const int stepperPin2 = 5;            // Digital pin for stepper motor control
-const int stepperPin3 = 6;            // Digital pin for stepper motor control
-const int stepperPin4 = 7;            // Digital pin for stepper motor control
-const int gasSensorPin = A0;          // Analog pin for gas sensor
-const int gasThreshold = 70;          // Gas threshold value
-const int fanSpeed = 200;             // Adjust the speed of the "fan"
-const int sensorDelay = 1000;         // Delay between sensor readings (in milliseconds)
+// Define pin numbers
+#define TRIGGER_PIN      9
+#define ECHO_PIN         10
+#define BUZZER_PIN       8
+#define SERVO_PIN        7
+#define STEPPER_PIN_1    A0
+#define STEPPER_PIN_2    A1
+#define STEPPER_PIN_3    A2
+#define STEPPER_PIN_4    A3
+#define GAS_SENSOR_PIN   A4 // Analog pin for gas sensor
 
-Stepper stepper(STEPS_PER_REVOLUTION, stepperPin1, stepperPin2, stepperPin3, stepperPin4);
+// Define constants
+#define MAX_DISTANCE     200
+#define BUZZER_FREQ      2000
+#define SERVO_DELAY      15
+#define STEPPER_STEPS    2048 // Adjust based on your stepper motor
+#define GAS_THRESHOLD    100 // Adjust threshold based on sensor sensitivity
+
+// Initialize objects
+Servo servo;
+Stepper stepper(STEPPER_STEPS, STEPPER_PIN_1, STEPPER_PIN_2, STEPPER_PIN_3, STEPPER_PIN_4);
+long duration, distance;
 
 void setup() {
-  Serial.begin(9600);  // Start serial communication
-  stepper.setSpeed(fanSpeed); // Set stepper motor speed
+  // Initialize serial communication
+  Serial.begin(9600);
+  
+  // Initialize pin modes
+  pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(SERVO_PIN, OUTPUT);
 }
 
 void loop() {
-  int gasValue = analogRead(gasSensorPin); // Read gas sensor value
+  // Measure distance
+  digitalWrite(TRIGGER_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGGER_PIN, LOW);
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration * 0.034 / 2;
 
-  Serial.print("Gas Value: ");
-  Serial.println(gasValue);
+  // Print distance to serial monitor
+  Serial.print("Distance: ");
+  Serial.println(distance);
 
-  if (gasValue > gasThreshold) {
-    rotateStepper(); // Rotate stepper motor if gas threshold is exceeded
+  // Activate buzzer and servo if object detected within specified range
+  if (distance < MAX_DISTANCE) {
+    tone(BUZZER_PIN, BUZZER_FREQ);
+    delay(100);
+    noTone(BUZZER_PIN);
+    for (int angle = 0; angle <= 180; angle += 5) {
+      servo.write(angle);
+      delay(SERVO_DELAY);
+    }
+    for (int angle = 180; angle >= 0; angle -= 5) {
+      servo.write(angle);
+      delay(SERVO_DELAY);
+    }
   }
 
-  delay(sensorDelay); // Delay before taking the next sensor reading
-}
+  // Read gas sensor value
+  int gasValue = analogRead(GAS_SENSOR_PIN);
+  Serial.print("Gas Value: ");
+  Serial.println(gasValue);
+  
+  // Check if gas value exceeds threshold
+  if (gasValue > GAS_THRESHOLD) {
+    // Gas detected, take necessary action
+    Serial.println("Gas detected! Taking necessary action...");
+    // For example, activate an alarm
+    tone(BUZZER_PIN, BUZZER_FREQ);
+    delay(1000);
+    noTone(BUZZER_PIN);
+    // Move stepper motor
+    stepper.setSpeed(20); // Adjust speed as needed
+    stepper.step(360); // Rotate stepper motor 360 degrees
+    delay(1000); // Delay before resetting stepper motor position
+    stepper.step(-360); // Reset stepper motor position
+  }
 
-void rotateStepper() {
-  stepper.step(1); // Rotate stepper motor by one step
-  delay(10);       // Adjust delay for desired "fan" speed
+  // Add a delay before next iteration
+  delay(1000); // Adjust delay as needed
 }
