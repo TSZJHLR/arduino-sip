@@ -28,7 +28,7 @@ this project was thought through a miteculous thinking process
 
 <h2> Components Used </h2>
 
-![Diagram](\assests\components.png)
+![Diagram](assests\components.png)
 
 -**Arduino Uno R3**
 
@@ -50,11 +50,11 @@ this project was thought through a miteculous thinking process
 
 <h2> Circuit Diagram </h2>
 
-![Diagram](\assests\circuit.png)
+![Diagram](assests\circuit.png)
 
 <h2> SchematicDiagram </h2>
 
-![Diagram](\assests\schematic.jpeg)
+![Diagram](assests\schematic.jpeg)
 
 </div>
 
